@@ -28,12 +28,6 @@ if ( defined( 'MW_SUPPORTS_PARSERFIRSTCALLINIT' ) ) {
 
 $wgHooks['ArticleSaveComplete'][] = 'bestofharvest';
 
-global $wgUseAjax;
-if ($wgUseAjax)
-{
-  $wgAjaxExportList[] = "bestofget";
-}
-
 function bestofinit()
 {
   global $wgParser;
@@ -57,7 +51,7 @@ function imagecp(&$output, $parser) {
   $matchi = preg_match_all('/(<a[^>]*href="([^"]*conservapedia\.com[^"]*)"[^>]*>(?:[^<]|<[^\/]|<\/[^a]|<\/a[^>])*<\/a>)(?!<span class="wigocapture">)/i', $output,$matches,PREG_OFFSET_CAPTURE);
   if ($matchi > 0) $newoutput = substr($output,0,$matches[1][0][1]);
   for ($i=0; $i<$matchi;++$i) {
-    $imgname = 'capture_' /*. $args['poll'] . '_'*/ . /*crc32*/ /*md5*/ sha1($matches[2][$i][0]) . '.png';
+    $imgname = 'capture_' . sha1($matches[2][$i][0]) . '.png';
     $text = $matches[1][$i][0];    
     $img =  $parser->recursiveTagParse("<span class=\"wigocapture\"><sup>[[:Image:$imgname|img]]</sup></span>");
     $nextlength = (($i == $matchi-1) ? (strlen($output) - ($matches[1][$i][1] + strlen($text))) : ($matches[1][$i+1][1] - ($matches[1][$i][1] + strlen($text))));
@@ -161,24 +155,24 @@ function bestofrender($input, $args, $parser)
 function bestofget($pollid, $cutoff, $month, $year, $keyword, $parser)
 {
   $dbr = wfGetDB(DB_SLAVE);
-  $conds = array("vote_id LIKE \"$pollid%\"");
+  $conds = array("vote_id " . $dbr->buildLike( $pollid, $dbr->anyString() ) );
   $options = array('GROUP BY' => 'vote_id','ORDER BY' => 'total DESC');
   if ($cutoff != null)
   {
-    $options['HAVING'] = "total >= {$cutoff}";
+    $options['HAVING'] = "total >= " . intval( $cutoff );
   }
   if ($month != null && $year != null)
   {
     $month = str_pad($month,2,'0',STR_PAD_LEFT);
-    $conds[] = "timestamp LIKE \"{$year}{$month}%\"";
+    $conds[] = "timestamp " . $dbr->buildLike( $year, $month, $dbr->anyString() );
   } elseif ($month == null && $year != null) {
-    $conds[] = "timestamp LIKE \"{$year}%\"";
+    $conds[] = "timestamp " . $dbr->buildLike( $year, $dbr->anyString() );
   } elseif ($month != null && $year == null) {
     $month = str_pad($month,2,'0',STR_PAD_LEFT);
-    $conds[] = "timestamp LIKE \"____{$month}%\"";
+    $conds[] = "timestamp " . $dbr->buildLike( $dbr->anyChar(), $dbr->anyChar(), $dbr->anyChar(), $dbr->anyChar(), $month, $dbr->anyString() );
   }
   if ($keyword != null) {
-    $conds[] = "text LIKE \"%{$keyword}%\"";
+    $conds[] = "text " . $dbr->buildLike( $dbr->anyString(), $keyword, $dbr->anyString() );
   }
   $res = $dbr->select(array('wigovote','wigotext'),
                       array('sum(case vote when 1 then 1 else 0 end) as plus',
