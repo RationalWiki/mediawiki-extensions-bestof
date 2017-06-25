@@ -94,7 +94,7 @@ function bestofrender($input, $args, $parser)
     
     global $wgLang;
     $selected = $month === null ? 'all' : intval($month);
-    $monthopts[] = Xml::option(wfMsg('monthsall'),'all',$selected === 'all');
+    $monthopts[] = Xml::option(wfMessage('monthsall')->text(),'all',$selected === 'all');
     for ($i = 1; $i < 13; ++$i)
     {
       $monthopts[] = Xml::option($wgLang->getMonthName($i),$i, $selected === $i);
@@ -102,13 +102,13 @@ function bestofrender($input, $args, $parser)
     $forminside = Xml::openElement('table',array('cellpadding' => 8)) .
                   Xml::openElement('tr') .
                     Xml::openElement('td') .
-                      Xml::label(wfMsg('bestof-cutoff'),'bfcutoff') .
+                      Xml::label(wfMessage('bestof-cutoff')->text(),'bfcutoff') .
                     Xml::closeElement('td') .
                     Xml::openElement('td') .                  
-                      Xml::label(wfMsg('bestof-month'),'bfmonth') .
+                      Xml::label(wfMessage('bestof-month')->text(),'bfmonth') .
                     Xml::closeElement('td') .
                     Xml::openElement('td') .
-                      Xml::label(wfMsg('bestof-filter'),'bfsearch') .
+                      Xml::label(wfMessage('bestof-filter')->text(),'bfsearch') .
                     Xml::closeElement('td') .
                   Xml::closeElement('tr') . "\n" .
                   Xml::openElement('tr') .
@@ -125,7 +125,7 @@ function bestofrender($input, $args, $parser)
                       Xml::input( 'bfsearch', 25, $keyword ) . ' '.
                     Xml::closeElement('td') .
                     Xml::openElement('td') .
-                      Xml::submitButton(wfMsg('bestof-submit')) .
+                      Xml::submitButton(wfMessage('bestof-submit')->text()) .
                     Xml::closeElement('td') .
                   Xml::closeElement('tr') .
                   Xml::closeElement('table');
@@ -138,7 +138,7 @@ function bestofrender($input, $args, $parser)
     $form = Xml::openElement('form', array( 'id' => 'bestofoption', 
                                             'action' => '',
                                             'method' => $wgRequest->wasPosted() ? 'POST' : 'GET' ) ) .
-            Xml::fieldset(wfMsg('bestof-legend'),$forminside) .
+            Xml::fieldset(wfMessage('bestof-legend')->text(),$forminside) .
             Xml::closeElement('form');
     $output = $form;
   } else {
@@ -187,16 +187,16 @@ function bestofget($pollid, $cutoff, $month, $year, $keyword, $parser)
   $output="<table cellspacing=\"2\" cellpadding=\"2\" border=\"0\">";
   wfLoadExtensionMessages('wigo3');
   static $sep = null;
-  if (is_null($sep)) $sep = wfMsg('bestof-tooltipseparator');
+  if (is_null($sep)) $sep = wfMessage('bestof-tooltipseparator')->text();
   while ($row = $res->fetchRow()) {
     $plus = $row['plus'];
     $minus = $row['minus'];
     $zero = $row['zero'];
     $numvotes = $plus+$minus+$zero;
     $total = $plus - $minus;
-    //wfMsgExt resets the parser state if the message contains a parser function, breaking for example references. recursiveTagParse doesn't.
-    //$totalvotes = htmlspecialchars($row['vote_id']) . " &bull; " . wfMsgExt('wigovotestotald',array('parsemag'),array($numvotes,$plus,$zero,$minus));
-    $totalvotes = htmlspecialchars($row['vote_id']) . $sep . $parser->recursiveTagParse(wfMsgNoTrans('wigovotestotald',array($numvotes,$plus,$zero,$minus)));
+	// wfMsgExt() resets the parser state if the message contains a parser function, breaking for example references. recursiveTagParse doesn't.
+	// @todo That's probably not true anymore, Message::parseText() uses the clone held by MessageCache, not $wgParser
+    $totalvotes = htmlspecialchars($row['vote_id']) . $sep . $parser->recursiveTagParse(wfMessage('wigovotestotald')->params($numvotes,$plus,$zero,$minus)->plain());
     $text = $parser->recursiveTagParse($row['text']);
     if ($row['is_cp']) {
       imagecp($text,$parser);
