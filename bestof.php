@@ -19,20 +19,12 @@ $wgExtensionCredits['parserhook'][] = array(
 $wgBestofIP = dirname( __FILE__ );
 $wgExtensionMessagesFiles['bestof'] = "$wgBestofIP/bestof.i18n.php";
 
-//Avoid unstubbing $wgParser on setHook() too early on modern (1.12+) MW versions, as per r35980
-if ( defined( 'MW_SUPPORTS_PARSERFIRSTCALLINIT' ) ) {
-	$wgHooks['ParserFirstCallInit'][] = 'bestofinit';
-} else { // Otherwise do things the old fashioned way
-	$wgExtensionFunctions[] = 'bestofinit';
-}
-
+$wgHooks['ParserFirstCallInit'][] = 'bestofinit';
 $wgHooks['ArticleSaveComplete'][] = 'bestofharvest';
 
-function bestofinit()
+function bestofinit( &$parser )
 {
-  global $wgParser;
-  wfLoadExtensionMessages('bestof');  
-  $wgParser->setHook('bestof','bestofrender');
+  $parser->setHook('bestof','bestofrender');
   return true;  
 }
 
@@ -89,8 +81,6 @@ function bestofrender($input, $args, $parser)
     $year = $wgRequest->getVal('bfyear', array_key_exists('year',$args) ? $args['yar'] : null);
     $month = $wgRequest->getVal('bfmonth', array_key_exists('month',$args) ? $args['month'] : null);
     $keyword = $wgRequest->getVal('bfsearch', array_key_exists('keyword',$args) ? $args['keyword'] : null);
-    
-    wfLoadExtensionMessages('bestof');
     
     global $wgLang;
     $selected = $month === null ? 'all' : intval($month);
@@ -185,7 +175,6 @@ function bestofget($pollid, $cutoff, $month, $year, $keyword, $parser)
                       $options,
                       array('wigotext' => array('RIGHT JOIN','id=vote_id')));
   $output="<table cellspacing=\"2\" cellpadding=\"2\" border=\"0\">";
-  wfLoadExtensionMessages('wigo3');
   static $sep = null;
   if (is_null($sep)) $sep = wfMessage('bestof-tooltipseparator')->text();
   while ($row = $res->fetchRow()) {
